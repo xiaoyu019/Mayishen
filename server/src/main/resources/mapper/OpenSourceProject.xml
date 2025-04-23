@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mayishen.codeanalyzer.mapper.OpenSourceProjectMapper">
+
+    <select id="selectPageByProjectID" resultType="com.mayishen.codeanalyzer.entity.OpenSourceProject">
+        SELECT
+        open_source_project.*,project_osp_relation.clone_line_number,project_osp_relation.clone_file_number
+        from open_source_project
+        left join project_osp_relation on project_osp_relation.osp_id = open_source_project.id
+        where project_osp_relation.project_id = #{pid}
+        <if test="license > -1">and open_source_project.license = #{license}</if>
+        ORDER BY
+        <choose>
+            <when test="order == 0 ">(project_osp_relation.clone_file_number / open_source_project.valid_file_number)
+            </when>
+            <otherwise>(project_osp_relation.clone_line_number / open_source_project.total_line_number)</otherwise>
+        </choose>
+        DESC
+    </select>
+
+    <insert id="linkWithCodeProject">
+        INSERT INTO project_osp_relation (osp_id, project_id, clone_line_number, clone_file_number)
+            VALUE (#{oid},#{pid},#{cloneLineNumber},#{cloneFileNumber});
+    </insert>
+
+    <delete id="clearLinkWithCodeProject">
+        DELETE
+        FROM project_osp_relation
+        where project_id = #{pid}
+    </delete>
+</mapper>

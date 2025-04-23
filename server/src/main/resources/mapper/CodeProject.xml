@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mayishen.codeanalyzer.mapper.CodeProjectMapper">
+    <resultMap id="countByDayDTO" type="com.mayishen.core.dto.CountByDayDTO">
+        <result property="day" column="day"/>
+        <result property="count" column="count"/>
+    </resultMap>
+
+    <resultMap id="countByQueryDTO" type="com.mayishen.core.dto.CountByQueryDTO">
+        <result property="name" column="name"/>
+        <result property="value" column="count"/>
+    </resultMap>
+
+    <update id="setProgress">
+        UPDATE code_project
+        SET progress = #{progress}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countByDay" resultMap="countByDayDTO">
+        SELECT date_format(create_date,'%Y-%m-%d') AS day,count(*) AS count
+        FROM code_project
+        <if test="uid > 0">WHERE user_id = #{uid}</if>
+        group by date_format(create_date,'%Y-%m-%d')
+        order by date_format(create_date,'%Y-%m-%d') desc
+    </select>
+
+    <select id="countByQuery" resultMap="countByQueryDTO">
+        SELECT
+        <choose>
+            <when test='query == "affiliation"'>affiliation</when>
+            <otherwise>area</otherwise>
+        </choose>
+        AS name,count(*) AS count
+        FROM code_project
+        <if test="uid > 0">WHERE user_id = #{uid}</if>
+        GROUP BY
+        <choose>
+            <when test='query == "affiliation"'>affiliation</when>
+            <when test='query == "area"'>area</when>
+            <otherwise>status</otherwise>
+        </choose>
+        ORDER BY create_date DESC
+    </select>
+
+    <select id="countFileByType" resultMap="countByQueryDTO">
+        SELECT project_code_file.type AS name, count(*) AS count
+        FROM project_code_file
+        WHERE project_code_file.project_id = #{pid}
+        GROUP BY project_code_file.type
+    </select>
+
+    <select id="countCloneFileByType" resultMap="countByQueryDTO">
+        SELECT project_code_file.type AS name, count(project_code_file.id) AS count
+        FROM project_code_file
+        WHERE project_code_file.project_id = #{pid} AND project_code_file.id in ( SELECT pcf_id FROM pcf_osf_relation)
+        GROUP BY project_code_file.type
+    </select>
+
+    <select id="thisMonthCount" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM code_project
+        WHERE DATE_FORMAT(create_date, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+        <if test="uid > 0">AND user_id = #{uid}</if>
+    </select>
+
+    <select id="getTotalValidFileNumber" resultType="java.lang.Integer">
+        SELECT sum(valid_file_number) FROM code_project
+        <if test="uid > 0">WHERE user_id = #{uid}</if>
+    </select>
+
+    <select id="getTotalLineNumber" resultType="java.lang.Integer">
+        SELECT sum(total_line_number) FROM code_project
+        <if test="uid > 0">WHERE user_id = #{uid}</if>
+    </select>
+</mapper>

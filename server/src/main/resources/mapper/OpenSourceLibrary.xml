@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mayishen.codeanalyzer.mapper.OpenSourceLibraryMapper">
+
+    <resultMap id="countByQueryDTO" type="com.mayishen.core.dto.CountByQueryDTO">
+        <result property="name" column="name"/>
+        <result property="value" column="count"/>
+    </resultMap>
+
+    <select id="countBugByLevel" resultMap="countByQueryDTO">
+        SELECT bug.level as name,
+               count(*) as count
+        from bug
+            left join osl_bug_relation
+        on bug.id = osl_bug_relation.bug_id
+            left join open_source_library on osl_bug_relation.osl_id = open_source_library.id
+        where open_source_library.project_id = #{pid}
+        GROUP BY bug.level
+    </select>
+
+
+</mapper>

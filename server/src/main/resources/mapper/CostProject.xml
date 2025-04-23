@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mayishen.costestimation.mapper.CostProjectMapper">
+
+    <resultMap id="countByDayDTO" type="com.mayishen.core.dto.CountByDayDTO">
+        <result property="day" column="day"/>
+        <result property="count" column="count"/>
+    </resultMap>
+
+    <resultMap id="countByQueryDTO" type="com.mayishen.core.dto.CountByQueryDTO">
+        <result property="name" column="name"/>
+        <result property="value" column="count"/>
+    </resultMap>
+
+    <update id="setProgress">
+        UPDATE cost_project
+        SET progress = #{progress}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countByDay" resultMap="countByDayDTO">
+        select date_format(create_date,'%Y-%m-%d') as day,count(*) as count
+        from cost_project
+        <if test="uid > 0">where user_id = #{uid}</if>
+        group by date_format(create_date,'%Y-%m-%d')
+        order by date_format(create_date,'%Y-%m-%d') desc
+    </select>
+
+    <select id="countByQuery" resultMap="countByQueryDTO">
+        select
+        <choose>
+            <when test='query == "affiliation"'>affiliation</when>
+            <when test='query == "area"'>area</when>
+            <otherwise>status</otherwise>
+        </choose>
+        as name,count(*) as count
+        from cost_project
+        <if test="uid > 0">where user_id = #{uid}</if>
+        group by
+        <choose>
+            <when test='query == "affiliation"'>affiliation</when>
+            <when test='query == "area"'>area</when>
+            <otherwise>status</otherwise>
+        </choose>
+        order by create_date desc
+    </select>
+
+
+    <select id="thisMonthCount" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM cost_project
+        WHERE DATE_FORMAT(create_date, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+        <if test="uid > 0">AND user_id = #{uid}</if>
+    </select>
+
+    <select id="getTotalAmount" resultType="bigDecimal">
+        select sum(total_amount) from cost_project
+        <if test="uid > 0">where user_id = #{uid}</if>
+    </select>
+</mapper>

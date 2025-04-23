@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mayishen.codeanalyzer.mapper.OpenSourceFileMapper">
+    <resultMap id="openSourceFileMap" type="com.mayishen.codeanalyzer.entity.OpenSourceFile">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="path" column="path"/>
+        <result property="type" column="type"/>
+        <result property="md5" column="md5"/>
+        <result property="fingerPrint" column="finger_print"/>
+        <result property="lineNumber" column="line_number"/>
+        <result property="openSourceProjectID" column="osp_id"/>
+        <collection property="projectCodeFiles" column="pcf_id" select="selectProjectCodeFileByID">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="path" column="path"/>
+            <result property="type" column="type"/>
+            <result property="md5" column="md5"/>
+            <result property="fingerPrint" column="finger_print"/>
+            <result property="lineNumber" column="line_number"/>
+            <result property="projectId" column="project_id"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectPageByProjectID" resultType="com.mayishen.codeanalyzer.entity.OpenSourceFile">
+        SELECT
+        open_source_file.*,project_code_file.name as project_file_name,project_code_file.path as
+        project_file_path,open_source_project.name as open_source_project_name, project_code_file.id as project_file_id
+        FROM open_source_file
+        left join open_source_project on open_source_file.osp_id = open_source_project.id
+        left join pcf_osf_relation on open_source_file.id = pcf_osf_relation.osf_id
+        left join project_code_file on project_code_file.id = pcf_osf_relation.pcf_id
+        WHERE project_code_file.project_id = #{pid}
+        <if test="type > 0">and open_source_file.type= #{type}</if>
+        GROUP BY open_source_file.path
+    </select>
+
+    <select id="selectPageByOpenSourceProjectID" resultMap="openSourceFileMap">
+        SELECT
+        open_source_file.*, pcf_osf_relation.pcf_id as pcf_id
+        FROM open_source_file
+        left join pcf_osf_relation on open_source_file.id = pcf_osf_relation.osf_id
+        WHERE open_source_file.osp_id = #{pid} and pcf_osf_relation.pcf_id is not null
+        <if test="type > 0">and open_source_file.type= #{type}</if>
+        GROUP BY open_source_file.id
+    </select>
+
+    <select id="selectProjectCodeFileByID" resultType="com.mayishen.codeanalyzer.entity.ProjectCodeFile">
+        SELECT project_code_file.*
+        FROM project_code_file
+        WHERE id = #{pcf_id}
+    </select>
+
+    <select id="selectByCodeFileID" resultType="com.mayishen.codeanalyzer.entity.OpenSourceFile">
+        SELECT open_source_file.*,
+               open_source_project.name as open_source_project_name,
+               pcf_osf_relation.pcf_id  as project_file_id
+        from open_source_file
+                 left join open_source_project on open_source_file.osp_id = open_source_project.id
+                 left join pcf_osf_relation on open_source_file.id = pcf_osf_relation.osf_id
+        WHERE pcf_osf_relation.pcf_id = #{id}
+        GROUP BY open_source_file.id
+    </select>
+
+    <insert id="linkWithProjectCodeFile">
+        INSERT INTO pcf_osf_relation (pcf_id, osf_id)
+            VALUE (#{pcf_id},#{osf_id});
+    </insert>
+
+    <delete id="clearLinkWithProjectCodeFile">
+        DELETE
+        FROM pcf_osf_relation
+        WHERE pcf_id = #{pcf_id}
+    </delete>
+</mapper>
